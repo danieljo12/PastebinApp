@@ -1,0 +1,89 @@
+package sample.pastebinapi;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;//
+
+public class Poster {
+
+    private PastebinAPI api;
+    private HashMap<String, Object> args = new HashMap<>();
+    private URL url;
+
+    protected Poster(PastebinAPI api) {
+        this.api = api;
+    }
+
+    protected Poster withArg(String key, Object value) {
+        args.put(key, value);
+        return this;
+    }
+
+    protected Poster withURL(URL url) {
+        this.url = url;
+        return this;
+    }
+
+    protected String[] post() throws PastebinException {
+        try {
+            StringBuffer a = new StringBuffer("api_dev_key=" + api.getAPIKey());
+
+            for (Map.Entry<String, Object> e : args.entrySet()) {
+                a.append("&" + e.getKey() + "=" + e.getValue());
+            }
+
+            String text = a.toString();
+
+            if (url == null) url = new URL("http://pastebin.com/api/api_post.php");
+
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setRequestProperty("charset", "utf-8");
+            connection.setRequestProperty("Content-Length", "" + text.getBytes().length);
+            connection.setUseCaches(false);
+
+            DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+            wr.writeBytes(text);
+            wr.flush();
+            wr.close();
+
+            connection.disconnect();
+
+            Scanner s = new Scanner(connection.getInputStream());
+
+            ArrayList<String> output = new ArrayList<String>();
+
+            while (s.hasNext()) {
+                String next = s.nextLine();
+                output.add(next);
+            }
+
+            /// the .startsWith checks if its true that the output starts with "Bad API request" or not
+            if (output.get(0).startsWith("Bad API request")) {
+                throw new PastebinException(output.get(0));
+            }
+
+            return output.toArray(new String[output.size()]); // returns if the try block goes thought...
+        }
+        catch (ProtocolException e) {
+            System.out.println("Protocol exception");
+        } catch (MalformedURLException e) {
+            System.out.println("Malformed url");
+        } catch (IOException e) {
+            System.out.println("IO exception");
+        }
+
+        return null;           // return null if the try block doesnt go though.
+    }
+}
