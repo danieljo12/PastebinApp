@@ -1,5 +1,5 @@
 # PastebinAPP
-a pastebin app made with java
+a pastebin creator app that i made to learn about gui and other stuff..
 
 First ever javafx application that clodio made!
 
